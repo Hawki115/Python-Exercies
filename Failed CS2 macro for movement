@@ -1,0 +1,48 @@
+from pynput import keyboard
+import time
+
+opposites = {'w': 's', 'a': 'd', 's': 'w', 'd': 'a'}
+
+keys_down = set()
+opposite_sent = set()
+MIN_INTERVAL = 0.15
+last_press_time = {}
+
+kb = keyboard.Controller()
+
+def on_press(key):
+    try:
+        k = key.char.lower()
+    except AttributeError:
+        return
+    if k in opposites:
+        if k not in keys_down:
+            keys_down.add(k)
+            opposite_sent.discard(k)
+
+def on_release(key):
+    try:
+        k = key.char.lower()
+    except AttributeError:
+        return
+    if k in opposites and k in keys_down:
+        keys_down.remove(k)
+        now = time.monotonic()
+        last_time = last_press_time.get(k, 0)
+
+        if (k not in opposite_sent) and (now - last_time > MIN_INTERVAL):
+            
+            time.sleep(0.07)  
+
+            opposite_key = opposites[k]
+            print(f"Released {k}, pressing opposite {opposite_key} once")
+            kb.press(opposite_key)
+            time.sleep(0.05)
+            kb.release(opposite_key)
+
+            opposite_sent.add(k)
+            last_press_time[k] = time.monotonic()
+
+with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
+    print("Running counter-strafe helper, no original key press, longer delay before opposite key.")
+    listener.join()
